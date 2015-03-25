@@ -1,0 +1,106 @@
+*** BUGS IN CODE ***
+
+Following bugs are found in the code below that the test case does not catch:
+
+Bug 1: 
+------
+Check to send message is . In the below check, if the successfulMessages are empty, the message is sent.
+Expected:  if(!successfulMessages.isEmpty()) {...}. This will send message only if good messages exist.
+Code: If (successfulMessages.isEmpty())
+{
+	recipientManager.addRecipient (currentUser, successfulMessages);
+}
+
+Bug 2:
+------
+Security issue in function canReceiveMessage
+Expected: The default return value of this function should be 'false'. If the two criterion's are not met, the default return should indicate a bad message.
+Code:
+return true;
+
+Bug 3:
+------
+Messages are being sent to the wrong user
+Expected: The successfulMessages should be sent to the recipient user and not the current user. The test case does not catch this as it is not simulating 2 users.
+Code:
+recipientManager.addRecipient (currentUser, successfulMessages);
+
+Bug 4:
+------
+Checks are not being made on messages being passed into addRecipientToAllMessages
+Expected: Certain checks such as empty list should be made inside the code. 
+Looping through empty ArrayList could cause unseen issues and wasted resources if not tested correctly.
+Code:
+for (Message message : messages)
+
+------------------------------------------------------------------------
+
+/**
+* Adds a recipient to all of the supplied Messages.
+* <p/>
+* If there is partial success, the Messages which we can modify will
+* be modified and the ones we cannot will be returned in an ArrayList.
+*
+* @param messages the list of messages to update
+* @param currentUser the user to run the operation as
+* @param recipient the recipient to add to the Messages
+* @return an ArrayList<Message> containing the Messages that could not be modified
+*/
+public ArrayList<Message> addRecipientToAllMessages(final ArrayList<Message> messages, final User
+currentUser, final User recipient)
+{
+	ArrayList<Message> successfulMessages = new ArrayList<Message> ();
+	ArrayList<Message> failedMessages = new ArrayList<Message> ();
+	for (Message message : messages)
+	{
+		If (canReceiveMessage(message, currentUser, recipient))
+		{
+			successfulMessages.add (message);
+		}
+		else
+		{
+			failedMessages.add (message);
+		}
+	}
+	If (successfulMessages.isEmpty())
+	{
+		recipientManager.addRecipient (currentUser, successfulMessages);
+	}
+	return failedMessages;
+}
+private boolean canReceiveMessage (Message message, User currentUser, User recipient)
+{
+	if (currentUser.equals(recipient) || currentUser.getHasPermissionToModifyRecipients())
+	{
+		return Message.getAddRecipientAllowed (recipient);
+	}
+	return true;
+}
+
+
+------------------------------------------------------------------------
+
+public TestAddRecipients ()
+{
+	User user = new User ("admin");
+	user.setHasPermissionToModifyRecipients(true);
+ 
+	Message goodMessage = new Message ("Test 1");
+	Message badMessage = new Message ("Test 2");
+ 
+	goodMessage.setAddRecipientAllowed (user, true);
+	badMessage.setAddRecipientAllowed (user, false);
+ 
+	ArrayList<Message> messages = new ArrayList<Message> ();
+	messages.add (goodMessage);
+	messages.add (badMessage);
+ 
+	// Assert that we pass two Messages into the function
+	assertEquals (Messages.size(), 2);
+ 
+	ArrayList<Message> result = addRecipientToAllMessages (messages, user, user);
+ 
+	// Assert that only one Message failed to be updated
+	assertEquals (result.size(), 1);
+}
+
