@@ -5,25 +5,110 @@ Following bugs are found in the code below that the test case does not catch:
 Bug 1: 
 ------
 Check to send message is . In the below check, if the successfulMessages are empty, the message is sent.
+
 Expected:  if(!successfulMessages.isEmpty()) {...}. This will send message only if good messages exist.
+
 Code: If (successfulMessages.isEmpty())
 {
 	recipientManager.addRecipient (currentUser, successfulMessages);
 }
 
+Test case:
+public TestSendNoSuccessfulMessage ()
+{
+	User user = new User ("admin");
+	user.setHasPermissionToModifyRecipients(true);
+
+ 	Message badMessage1 = new Message ("Test 1");
+	Message badMessage2 = new Message ("Test 2");
+	badMessage1.setAddRecipientAllowed (user, false);
+	badMessage2.setAddRecipientAllowed (user, false);
+ 
+	ArrayList<Message> messages = new ArrayList<Message> ();
+	messages.add (badMessage1);
+	messages.add (badMessage2);
+ 
+	// Assert that we pass two Messages into the function
+	assertEquals (Messages.size(), 2);
+ 
+	ArrayList<Message> result = addRecipientToAllMessages (messages, user, user);
+ 
+	// No messages should received by the user as no permissions
+	// This will catch the bug as an empty mail will be sent out, so message received by user (with no messages inside)
+	assertAreEqual(user.MessageReceived.Count(), 0);
+}
+
 Bug 2:
 ------
 Security issue in function canReceiveMessage
+
 Expected: The default return value of this function should be 'false'. If the two criterion's are not met, the default return should indicate a bad message.
-Code:
-return true;
+
+Code: return true;
+
+Test case:
+public TestCanReceiveMessages ()
+{
+	User user = new User ("admin");
+	User receiver = new User ("Guest");
+	user.setHasPermissionToModifyRecipients(false);
+	receiver.setHasPermissionToModifyRecipients(false);
+
+ 	Message goodMessage = new Message ("Test 1");
+	Message badMessage = new Message ("Test 2");
+	goodMessage.setAddRecipientAllowed (user, true);
+	badMessage.setAddRecipientAllowed (user, false);
+ 
+	ArrayList<Message> messages = new ArrayList<Message> ();
+	messages.add (goodMessage);
+	messages.add (badMessage);
+ 
+	// Assert that we pass two Messages into the function
+	assertEquals (Messages.size(), 2);
+ 
+	ArrayList<Message> result = addRecipientToAllMessages (messages, user, receiver);
+ 
+	// Both messages should be returned
+	// This will catch the bug that returns true by default as both messages will be sent
+	assertAreEqual(result.Count, 2);
+}
 
 Bug 3:
 ------
 Messages are being sent to the wrong user
+
 Expected: The successfulMessages should be sent to the recipient user and not the current user. The test case does not catch this as it is not simulating 2 users.
+
 Code:
 recipientManager.addRecipient (currentUser, successfulMessages);
+
+Test Case:
+- We can use two users and check if the other user got the message 
+public TestReceipientReceivesMessages ()
+{
+	User user = new User ("admin");
+	User receiver = new User ("Guest");
+	user.setHasPermissionToModifyRecipients(true);
+	receiver.setHasPermissionToModifyRecipients(true);
+ 
+	Message goodMessage = new Message ("Test 1");
+	Message badMessage = new Message ("Test 2");
+ 
+	goodMessage.setAddRecipientAllowed (user, true);
+	badMessage.setAddRecipientAllowed (user, false);
+ 
+	ArrayList<Message> messages = new ArrayList<Message> ();
+	messages.add (goodMessage);
+	messages.add (badMessage);
+ 
+	// Assert that we pass two Messages into the function
+	assertEquals (Messages.size(), 2);
+ 
+	ArrayList<Message> result = addRecipientToAllMessages (messages, user, user);
+ 
+	// Assert that receiver received the message
+	assertAreEqual(receiver.Messages.Count, 1);
+}
 
 Bug 4:
 ------
@@ -32,6 +117,8 @@ Expected: Certain checks such as empty list should be made inside the code.
 Looping through empty ArrayList could cause unseen issues and wasted resources if not tested correctly.
 Code:
 for (Message message : messages)
+Test case:
+- Send null and check what happens. addRecipientToAllMessages (null, user, user);
 
 ------------------------------------------------------------------------
 
